@@ -1,83 +1,58 @@
 # Git Object Engine
 
-A simplified, from-scratch implementation of the Git version control system written in Node.js.
+A simplified, from-scratch implementation of Git written in Node.js that rebuilds Git’s core internal architecture — including blobs, trees, commits, object storage, hashing, compression, and commit graph traversal.
 
-This project re-implements Git’s core internal architecture including blobs, trees, commits, object storage, hashing, compression, and commit graph traversal — to deeply understand how Git works under the hood.
+> This project is designed to **demystify Git internals** by implementing its plumbing layer from scratch.
 
 ---
 
-## 🚀 Overview
-
-git-object-engine demystifies Git by rebuilding its core plumbing commands from scratch.
+## 🔥 What This Project Covers
 
 Instead of treating Git as a black box, this project implements:
 
-- Content-addressable object storage
-- SHA-1 hashing
-- Zlib compression
-- Binary tree object encoding
-- Commit Directed Acyclic Graph (DAG)
-- A custom staging index
-- CLI command execution engine
+* Content-addressable object storage
+* SHA-1 hashing
+* Zlib compression
+* Binary tree object encoding
+* Commit Directed Acyclic Graph (DAG)
+* Custom staging index
+* CLI command execution engine
 
 ---
 
-## 🧠 Core Concepts Implemented
-
-### 1️⃣ The `.git` Directory
-
-Recreates Git’s internal repository structure:
+## 🧠 Mental Model (End-to-End Flow)
 
 ```
-.git/
-  ├── objects/
-  ├── refs/
-  └── HEAD
+file.txt
+   ↓ add
+blob (SHA1)
+   ↓ index (staging)
+write-tree
+   ↓
+tree object
+   ↓
+commit-tree
+   ↓
+commit (linked via parent → DAG)
 ```
-
----
-
-### 2️⃣ Git Objects
-
-#### 🔹 Blob
-- Stores raw file contents
-- Format: `blob <size>\0<content>`
-- SHA-1 hashed
-- Zlib compressed
-
-#### 🔹 Tree
-- Represents directory structure
-- Stores entries in binary format:
-  
-  ```
-  <mode> <filename>\0<20-byte raw SHA>
-  ```
-- Sorted lexicographically
-- Prefixed with: `tree <size>\0`
-
-#### 🔹 Commit
-- Points to a tree
-- Links to parent commit(s)
-- Stores author, committer, timestamp, and message
-- Forms a commit DAG
 
 ---
 
 ## ⚙️ Implemented Commands
 
-| Command | Description |
-|----------|-------------|
-| `init` | Initialize a new repository |
-| `add` | Stage file (creates blob + updates index) |
-| `write-tree` | Create tree object from staged files |
-| `commit-tree` | Create commit object |
-| `cat-file` | Inspect object contents |
-| `ls-tree` | List tree contents |
-| `log` | Traverse commit history |
+| Command     | Description                      | Real Git Equivalent |
+| ----------- | -------------------------------- | ------------------- |
+| init        | Initialize repository            | git init            |
+| add         | Stage file (create blob + index) | git add             |
+| write-tree  | Create tree from index           | git write-tree      |
+| commit-tree | Create commit                    | git commit-tree     |
+| cat-file    | Inspect object contents          | git cat-file        |
+| ls-tree     | List tree contents               | git ls-tree         |
+| log         | Traverse commit history          | git log             |
 
 ---
 
-## 🏗 Architecture
+## 🏗 Project Structure
 
 ```
 app/
@@ -95,20 +70,26 @@ app/
   main.js
 ```
 
-Uses a command pattern architecture where each Git command is encapsulated in a class with an `execute()` method.
+✔ Uses a **Command Pattern**
+Each Git command is implemented as a class with an `execute()` method.
 
 ---
 
-## 🔬 How It Works Internally
+## 🔬 Internal Working
 
-### Object Storage
+### 📦 Object Storage
 
-All objects are:
+All objects follow Git’s format:
 
-1. Prefixed with header (`type size\0`)
-2. SHA-1 hashed
-3. Compressed using zlib
-4. Stored in:
+```
+<type> <size>\0<content>
+```
+
+Then:
+
+* SHA-1 hashed
+* Zlib compressed
+* Stored in:
 
 ```
 .git/objects/<first2>/<remaining38>
@@ -116,20 +97,29 @@ All objects are:
 
 ---
 
-### Commit Graph
+### 🌳 Tree Object (Binary Encoding)
 
-Each commit stores:
+```
+<mode> <filename>\0<20-byte raw SHA>
+```
+
+* Sorted lexicographically
+* Matches real Git tree structure
+
+---
+
+### 🧾 Commit Object
 
 ```
 tree <treeSHA>
 parent <parentSHA>
-author ...
-committer ...
+author <name> <timestamp>
+committer <name> <timestamp>
 
 <message>
 ```
 
-This creates a Directed Acyclic Graph (DAG) enabling history traversal.
+👉 Forms a **Directed Acyclic Graph (DAG)** enabling history traversal
 
 ---
 
@@ -139,8 +129,10 @@ This creates a Directed Acyclic Graph (DAG) enabling history traversal.
 # Initialize repository
 git-object-engine init
 
-# Add file
+# Create a file
 echo "Hello Git" > file.txt
+
+# Stage file
 git-object-engine add file.txt
 
 # Create tree
@@ -155,16 +147,34 @@ git-object-engine log $commitSHA
 
 ---
 
-## 📚 Learning Goals
+## 📦 Installation & Setup
 
-This project was built to:
+```bash
+git clone <your-repo-link>
+cd git-object-engine
 
-- Understand Git internals beyond surface usage
-- Learn content-addressable storage systems
-- Implement binary encoding and decoding
-- Work with hashing and compression
-- Build a CLI tool from scratch
-- Understand DAG-based version history
+npm install
+npm link
+```
+
+Now you can run:
+
+```bash
+git-object-engine <command>
+```
+
+---
+
+## 📚 Learning Objectives
+
+This project helps you:
+
+* Understand Git beyond surface-level usage
+* Learn content-addressable storage systems
+* Work with hashing and compression
+* Implement binary encoding/decoding
+* Build CLI tools from scratch
+* Understand DAG-based version history
 
 ---
 
@@ -172,27 +182,26 @@ This project was built to:
 
 This is an educational implementation and does not include:
 
-- Branch management
-- Checkout
-- Merge handling
-- Pack files
-- Reflog
-- Advanced index format
+* Branching
+* Checkout
+* Merge handling
+* Packfiles
+* Reflog
+* Advanced index format
 
 ---
 
 ## 👨‍💻 Author
 
-Aryan Sharma  
-Software Engineering  
+**Aryan Sharma**
 Delhi Technological University
 
 ---
 
 ## 📌 Why This Project Matters
 
-Most developers know how to *use* Git.
+Most developers know how to use Git.
 
 Very few understand how Git actually works internally.
 
-This project bridges that gap.
+👉 This project bridges that gap.
