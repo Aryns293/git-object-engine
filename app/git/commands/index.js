@@ -4,6 +4,7 @@ const HashObjectCommand = require("./hash-object");
 const CatFileCommand = require("./cat-file");
 const WriteTreeCommand = require("./write-tree");
 const CommitTreeCommand = require("./commit-tree");
+const CommitCommand = require("./commit");
 const LsTreeCommand = require("./ls-tree");
 const LogCommand = require("./log");
 const DiffCommand = require("./diff");
@@ -15,7 +16,8 @@ module.exports = {
   CatFileCommand,
   WriteTreeCommand,
   CommitTreeCommand,
+  CommitCommand,
   LsTreeCommand,
   LogCommand,
-  DiffCommand
+  DiffCommand,
 };

@@ -8,8 +8,24 @@ class LogCommand {
     this.gitDir = path.join(process.cwd(), ".git");
   }
 
+  getShaFromHead() {
+    const headPath = path.join(this.gitDir, "HEAD");
+    const ref = fs.readFileSync(headPath, "utf-8").trim();
+
+    if (ref.startsWith("ref:")) {
+      const refPath = path.join(this.gitDir, ref.replace("ref: ", ""));
+      if (fs.existsSync(refPath)) {
+        return fs.readFileSync(refPath, "utf-8").trim();
+      } else {
+        console.error("No commits yet");
+        process.exit(1);
+      }
+    }
+    return ref;
+  }
+
   execute() {
-    let current = this.sha;
+    let current = this.sha || this.getShaFromHead();
 
     while (current) {
       const objPath = path.join(
