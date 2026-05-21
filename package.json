@@ -1,0 +1,14 @@
+{
+  "name": "git-object-engine",
+  "version": "1.0.0",
+  "description": "A from-scratch reimplementation of Git's object database and commit DAG engine in Node.js",
+  "main": "app/main.js",
+  "bin": {
+    "git-object-engine": "./app/main.js"
+  },
+  "scripts": {
+    "start": "node app/main.js"
+  },
+  "author": "Aryan Sharma",
+  "license": "MIT"
+}
