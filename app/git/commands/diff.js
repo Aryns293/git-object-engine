@@ -2,7 +2,6 @@ const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 
-// terminal colors
 const RED = "\x1b[31m";
 const GREEN = "\x1b[32m";
 const CYAN = "\x1b[36m";
@@ -16,7 +15,6 @@ class DiffCommand {
     this.gitDir = path.join(process.cwd(), ".git");
   }
 
-  // read any object from .git/objects
   readObject(sha) {
     const objPath = path.join(
       this.gitDir,
@@ -39,7 +37,6 @@ class DiffCommand {
     return { type, content };
   }
 
-  // get tree SHA from commit SHA
   getTreeFromCommit(commitSha) {
     const { type, content } = this.readObject(commitSha);
 
@@ -57,7 +54,6 @@ class DiffCommand {
     return match[1];
   }
 
-  // parse tree object → { filename: blobSHA }
   parseTree(treeSha) {
     const { content } = this.readObject(treeSha);
     const files = {};
@@ -76,31 +72,50 @@ class DiffCommand {
     return files;
   }
 
-  // get blob content as array of lines
   getBlobLines(sha) {
     const { content } = this.readObject(sha);
     return content.toString().split("\n");
   }
 
-  // line by line diff between two arrays of lines
+  buildLCS(oldLines, newLines) {
+    const m = oldLines.length;
+    const n = newLines.length;
+
+    const dp = Array(m + 1)
+      .fill(null)
+      .map(() => Array(n + 1).fill(0));
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        if (oldLines[i - 1] === newLines[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+
+    return dp;
+  }
+
   diffLines(oldLines, newLines) {
+    const dp = this.buildLCS(oldLines, newLines);
     const output = [];
 
-    const maxLen = Math.max(oldLines.length, newLines.length);
+    let i = oldLines.length;
+    let j = newLines.length;
 
-    for (let i = 0; i < maxLen; i++) {
-      const oldLine = oldLines[i];
-      const newLine = newLines[i];
-
-      if (oldLine === newLine) {
-        output.push(`  ${oldLine}`);               // unchanged
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+        output.unshift(`  ${oldLines[i - 1]}`);
+        i--;
+        j--;
+      } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+        output.unshift(`${GREEN}+ ${newLines[j - 1]}${RESET}`);
+        j--;
       } else {
-        if (oldLine !== undefined) {
-          output.push(`${RED}- ${oldLine}${RESET}`); // deleted
-        }
-        if (newLine !== undefined) {
-          output.push(`${GREEN}+ ${newLine}${RESET}`); // added
-        }
+        output.unshift(`${RED}- ${oldLines[i - 1]}${RESET}`);
+        i--;
       }
     }
 
@@ -113,15 +128,12 @@ class DiffCommand {
       process.exit(1);
     }
 
-    // get trees from both commits
     const treeSha1 = this.getTreeFromCommit(this.sha1);
     const treeSha2 = this.getTreeFromCommit(this.sha2);
 
-    // get files from both trees
     const files1 = this.parseTree(treeSha1);
     const files2 = this.parseTree(treeSha2);
 
-    // get all unique filenames
     const allFiles = new Set([
       ...Object.keys(files1),
       ...Object.keys(files2),
@@ -133,7 +145,6 @@ class DiffCommand {
       const sha1 = files1[filename];
       const sha2 = files2[filename];
 
-      // file unchanged
       if (sha1 === sha2) return;
 
       anyDiff = true;
@@ -141,26 +152,21 @@ class DiffCommand {
       console.log(`\n${BOLD}${CYAN}diff → ${filename}${RESET}`);
 
       if (!sha1) {
-        // file added in commit2
         console.log(`${BOLD}${GREEN}+++ ${filename} (new file)${RESET}`);
         const lines = this.getBlobLines(sha2);
-        lines.forEach(l => console.log(`${GREEN}+ ${l}${RESET}`));
-
+        lines.forEach((l) => console.log(`${GREEN}+ ${l}${RESET}`));
       } else if (!sha2) {
-        // file deleted in commit2
         console.log(`${BOLD}${RED}--- ${filename} (deleted)${RESET}`);
         const lines = this.getBlobLines(sha1);
-        lines.forEach(l => console.log(`${RED}- ${l}${RESET}`));
-
+        lines.forEach((l) => console.log(`${RED}- ${l}${RESET}`));
       } else {
-        // file modified
         console.log(`${RED}--- ${filename} (commit1)${RESET}`);
         console.log(`${GREEN}+++ ${filename} (commit2)${RESET}`);
 
         const lines1 = this.getBlobLines(sha1);
         const lines2 = this.getBlobLines(sha2);
         const diffOutput = this.diffLines(lines1, lines2);
-        diffOutput.forEach(l => console.log(l));
+        diffOutput.forEach((l) => console.log(l));
       }
     });
 
